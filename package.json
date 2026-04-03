@@ -1,0 +1,12 @@
+{
+  "name": "factpay",
+  "version": "1.0.0",
+  "description": "Pay-Per-Fact AI Oracle — outcome-conditional micropayments via OWS Policy Engine",
+  "scripts": {
+    "dev": "cd backend && uvicorn server:app --reload --port 8402",
+    "start": "cd backend && uvicorn server:app --host 0.0.0.0 --port 8402"
+  },
+  "dependencies": {
+    "@open-wallet-standard/core": "latest"
+  }
+}

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FactPay — Truth has a price. Lies are free.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0F172A;
+            --surface: #1E293B;
+            --surface-hover: #334155;
+            --text: #F8FAFC;
+            --text-muted: #94A3B8;
+            --green: #10B981;
+            --green-bg: #065F46;
+            --amber: #F59E0B;
+            --amber-bg: #78350F;
+            --blue: #3B82F6;
+            --usdc-blue: #2775CA;
+            --red: #EF4444;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--green);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--bg);
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-tagline {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-left: 12px;
+        }
+
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: var(--mono);
+            font-size: 13px;
+        }
+
+        .wallet-balance {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .wallet-label {
+            color: var(--text-muted);
+        }
+
+        /* Main Layout */
+        .main {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--surface);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 85%;
+            animation: fadeSlideUp 0.3s ease;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            align-self: flex-end;
+        }
+
+        .message-ai {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message-user .message-bubble {
+            background: var(--blue);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-ai .message-bubble {
+            background: var(--surface);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Citation Badge */
+        .citation-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--mono);
+        }
+
+        .badge-verified {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .badge-unverified {
+            background: var(--amber-bg);
+            color: var(--amber);
+        }
+
+        .citation-link {
+            font-size: 12px;
+            color: var(--blue);
+            text-decoration: none;
+            font-family: var(--mono);
+        }
+
+        .citation-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Payment Display */
+        .payment-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--surface-hover);
+        }
+
+        .payment-amount {
+            font-family: var(--mono);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .payment-amount.paid {
+            color: var(--green);
+        }
+
+        .payment-amount.blocked {
+            color: var(--text-muted);
+        }
+
+        .payment-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .policy-status {
+            font-size: 11px;
+            font-family: var(--mono);
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .policy-status.pass {
+            color: var(--green);
+        }
+
+        .policy-status.fail {
+            color: var(--amber);
+        }
+
+        /* x402 Flow Indicator */
+        .x402-flow {
+            margin-top: 8px;
+            font-size: 11px;
+            font-family: var(--mono);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 6px;
+            border-left: 2px solid var(--blue);
+        }
+
+        .x402-flow .step {
+            padding: 1px 0;
+        }
+
+        .x402-flow .step.highlight {
+            color: var(--green);
+        }
+
+        .x402-flow .step.reject {
+            color: var(--amber);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--surface);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--surface-hover);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: var(--blue);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #2563EB;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Sidebar — Payment Log */
+        .sidebar {
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--surface);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sidebar-stats {
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            border-bottom: 1px solid var(--surface);
+        }
+
+        .stat-card {
+            padding: 12px;
+            background: var(--surface);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-family: var(--mono);
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .payment-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .payment-entry {
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--surface);
+            animation: fadeSlideUp 0.3s ease;
+        }
+
+        .payment-entry-question {
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .payment-entry-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .payment-entry-amount {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .payment-entry-amount.paid {
+            color: var(--green);
+        }
+
+        .payment-entry-amount.blocked {
+            color: var(--text-muted);
+        }
+
+        /* Welcome Message */
+        .welcome {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-muted);
+        }
+
+        .welcome h2 {
+            font-size: 24px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            font-size: 15px;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .welcome .examples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .example-btn {
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--surface-hover);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-family: var(--font);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+            border-color: var(--blue);
+        }
+
+        /* OWS Badge */
+        .ows-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--blue);
+        }
+
+        /* Loading Dots */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(3, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 300px; }
+            .chat-area { border-right: none; border-bottom: 1px solid var(--surface); }
+            .logo-tagline { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">F</div>
+            <span class="logo-text">FactPay</span>
+            <span class="logo-tagline">Truth has a price. Lies are free.</span>
+        </div>
+        <div class="wallet-info">
+            <span class="ows-badge">OWS</span>
+            <span class="wallet-label">Balance:</span>
+            <span class="wallet-balance" id="balance">$1.000</span>
+        </div>
+    </header>
+
+    <div class="main">
+        <div class="chat-area">
+            <div class="chat-messages" id="messages">
+                <div class="welcome">
+                    <h2>Ask anything. Pay only for truth.</h2>
+                    <p>FactPay charges <strong>$0.003</strong> per verified fact with a citation.
+                       Unverified answers are free. The OWS Policy Engine enforces this cryptographically.</p>
+                    <div class="examples">
+                        <button class="example-btn" onclick="askExample(this)">When was OWS launched?</button>
+                        <button class="example-btn" onclick="askExample(this)">What is x402?</button>
+                        <button class="example-btn" onclick="askExample(this)">What is the GDP of Mars?</button>
+                        <button class="example-btn" onclick="askExample(this)">Tell me about USDC</button>
+                        <button class="example-btn" onclick="askExample(this)">Who created Bitcoin?</button>
+                        <button class="example-btn" onclick="askExample(this)">What color is sadness?</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <div class="input-row">
+                    <input type="text" class="input-field" id="question" placeholder="Ask anything..."
+                           onkeydown="if(event.key==='Enter')sendQuestion()">
+                    <button class="send-btn" id="sendBtn" onclick="sendQuestion()">Ask</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">Payment Log</div>
+            <div class="sidebar-stats">
+                <div class="stat-card">
+                    <div class="stat-value paid" id="totalPaid">$0.000</div>
+                    <div class="stat-label">Total Paid</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSaved" style="color: var(--amber)">$0.000</div>
+                    <div class="stat-label">Saved (Free)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--green)" id="verifiedCount">0</div>
+                    <div class="stat-label">Verified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--amber)" id="unverifiedCount">0</div>
+                    <div class="stat-label">Unverified</div>
+                </div>
+            </div>
+            <div class="payment-list" id="paymentList">
+                <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;">
+                    No payments yet. Ask a question to start.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let balance = 1.0;
+        let totalPaid = 0;
+        let totalSaved = 0;
+        let verified = 0;
+        let unverified = 0;
+        let firstQuery = true;
+
+        const API = window.location.origin;
+
+        function askExample(btn) {
+            document.getElementById('question').value = btn.textContent;
+            sendQuestion();
+        }
+
+        async function sendQuestion() {
+            const input = document.getElementById('question');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            input.value = '';
+
+            // Remove welcome message on first query
+            if (firstQuery) {
+                document.querySelector('.welcome')?.remove();
+                firstQuery = false;
+            }
+
+            // Add user message
+            addMessage(question, 'user');
+
+            // Add loading message
+            const loadingId = 'loading-' + Date.now();
+            addLoadingMessage(loadingId);
+
+            try {
+                const res = await fetch(`${API}/ask`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await res.json();
+
+                // Remove loading
+                document.getElementById(loadingId)?.remove();
+
+                // Add AI response
+                addAIMessage(data);
+
+                // Update sidebar
+                updatePaymentLog(data);
+                updateStats(data);
+
+            } catch (err) {
+                document.getElementById(loadingId)?.remove();
+                addMessage('Error connecting to FactPay server.', 'ai');
+            }
+
+            sendBtn.disabled = false;
+            input.focus();
+        }
+
+        function addMessage(text, type) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message message-${type}`;
+            div.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addLoadingMessage(id) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'message message-ai';
+            div.id = id;
+            div.innerHTML = `<div class="message-bubble" style="color: var(--text-muted)">
+                Querying via x402<span class="loading-dots"></span>
+            </div>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addAIMessage(data) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'message message-ai';
+
+            const isVerified = data.verified;
+            const badgeClass = isVerified ? 'badge-verified' : 'badge-unverified';
+            const badgeIcon = isVerified ? '✓' : '⚠';
+            const badgeText = isVerified ? 'Verified' : 'Unverified';
+            const amountClass = isVerified ? 'paid' : 'blocked';
+            const amount = data.payment.amount_display;
+            const policyClass = isVerified ? 'pass' : 'fail';
+            const policyText = isVerified
+                ? 'Policy Engine: citation ≠ null → SIGN'
+                : 'Policy Engine: citation = null → REJECT';
+
+            let citationHtml = '';
+            if (data.citation) {
+                citationHtml = `<a href="${escapeHtml(data.citation)}" class="citation-link" target="_blank">
+                    ${escapeHtml(data.source_name || data.citation)}</a>`;
+            }
+
+            // x402 flow visualization
+            const flow = data.payment.x402_flow;
+            const flowSteps = Object.values(flow).map((step, i) => {
+                let cls = '';
+                if (step.includes('SIGN') || step.includes('delivers verified')) cls = 'highlight';
+                if (step.includes('REFUSES') || step.includes('No payment') || step.includes('False')) cls = 'reject';
+                return `<div class="step ${cls}">${step}</div>`;
+            }).join('');
+
+            div.innerHTML = `
+                <div class="message-bubble">
+                    ${escapeHtml(data.answer)}
+                    <div class="citation-row">
+                        <span class="badge ${badgeClass}">${badgeIcon} ${badgeText}</span>
+                        ${citationHtml}
+                    </div>
+                    <div class="payment-display">
+                        <span class="payment-amount ${amountClass}">${amount}</span>
+                        <span class="payment-label">USDC on Base</span>
+                        <span class="ows-badge">OWS</span>
+                    </div>
+                    <div class="policy-status ${policyClass}">${policyText}</div>
+                    <div class="x402-flow">${flowSteps}</div>
+                </div>
+            `;
+
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function updatePaymentLog(data) {
+            const list = document.getElementById('paymentList');
+            // Remove "no payments" placeholder
+            if (list.children.length === 1 && list.children[0].tagName !== 'DIV' ||
+                (list.children[0] && list.children[0].style?.textAlign === 'center')) {
+                list.innerHTML = '';
+            }
+
+            const entry = document.createElement('div');
+            entry.className = 'payment-entry';
+            const amountClass = data.verified ? 'paid' : 'blocked';
+            entry.innerHTML = `
+                <div class="payment-entry-question">${escapeHtml(data.question)}</div>
+                <div class="payment-entry-meta">
+                    <span class="badge ${data.verified ? 'badge-verified' : 'badge-unverified'}" style="font-size: 10px; padding: 2px 6px;">
+                        ${data.verified ? '✓' : '⚠'}
+                    </span>
+                    <span class="payment-entry-amount ${amountClass}">${data.payment.amount_display}</span>
+                </div>
+            `;
+
+            // Add to top
+            list.insertBefore(entry, list.firstChild);
+        }
+
+        function updateStats(data) {
+            if (data.verified) {
+                totalPaid += data.payment.amount_usdc;
+                balance -= data.payment.amount_usdc;
+                verified++;
+            } else {
+                totalSaved += 0.003;
+                unverified++;
+            }
+
+            document.getElementById('totalPaid').textContent = `$${totalPaid.toFixed(3)}`;
+            document.getElementById('totalSaved').textContent = `$${totalSaved.toFixed(3)}`;
+            document.getElementById('balance').textContent = `$${balance.toFixed(3)}`;
+            document.getElementById('verifiedCount').textContent = verified;
+            document.getElementById('unverifiedCount').textContent = unverified;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
