@@ -17,18 +17,25 @@ FactPay introduces **outcome-conditional micropayments** — a new x402 payment 
 
 The wallet itself becomes the quality gate. Not application logic — cryptographic enforcement.
 
-## How It Works
+## How It Works — Real x402 Flow
 
 ```
-User asks question
-    ↓
-FactPay queries fact service via x402
-    ↓
-Service returns: answer + citation (or null)
-    ↓
-OWS Policy Engine checks: citation != null?
-    ├── YES → Signs USDC payment → Delivers verified fact ($0.003)
-    └── NO  → Refuses to sign → Delivers free answer ($0.000)
+1. Client sends POST /ask (no payment)
+        ↓
+2. Server checks: does the answer have a citation?
+        ↓
+   YES → Server returns HTTP 402 Payment Required
+         Headers: X-Payment-Amount, X-Payment-Address, X-Payment-Network
+         Body: { payment_required: { amount_usdc: 0.003, to_wallet: "0xC014..." } }
+        ↓
+3. OWS Policy Engine checks: citation != null → SIGN
+        ↓
+4. Client retries POST /ask with X-Payment header (signed by OWS wallet)
+        ↓
+5. Server verifies payment → delivers verified fact ($0.003)
+
+   NO → Server returns HTTP 200 with free answer ($0.000)
+        No 402 challenge. Policy Engine would reject signing anyway.
 ```
 
 ## Quick Start

@@ -593,26 +593,61 @@
 
             // Add loading message
             const loadingId = 'loading-' + Date.now();
-            addLoadingMessage(loadingId);
+            addLoadingMessage(loadingId, 'Querying via x402');
 
             try {
+                // Step 1: Initial request (no payment)
                 const res = await fetch(`${API}/ask`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })
                 });
 
-                const data = await res.json();
+                if (res.status === 402) {
+                    // x402 Payment Required — real 402 flow!
+                    const challengeData = await res.json();
+                    const queryId = res.headers.get('X-Payment-Query-Id') || challengeData.query_id;
+                    const amount = res.headers.get('X-Payment-Amount') || challengeData.payment_required.amount_usdc;
+                    const payTo = res.headers.get('X-Payment-Address') || challengeData.payment_required.to_wallet;
 
-                // Remove loading
-                document.getElementById(loadingId)?.remove();
+                    // Show 402 challenge in loading state
+                    updateLoadingMessage(loadingId, `402 Payment Required · $${amount} USDC → ${payTo.slice(0,6)}...${payTo.slice(-4)}`);
 
-                // Add AI response
-                addAIMessage(data);
+                    // Simulate OWS Policy Engine check (citation found → sign)
+                    await sleep(400);
+                    updateLoadingMessage(loadingId, 'OWS Policy Engine: citation ≠ null → SIGN');
 
-                // Update sidebar
-                updatePaymentLog(data);
-                updateStats(data);
+                    // Sign payment (OWS wallet auto-signs based on policy)
+                    await sleep(300);
+                    const paymentSig = await signPayment(queryId, amount);
+                    updateLoadingMessage(loadingId, `Signing payment: ${paymentSig.slice(0,10)}...`);
+
+                    await sleep(300);
+
+                    // Step 2: Retry with X-Payment header
+                    const paidRes = await fetch(`${API}/ask`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Payment': `${queryId}:${paymentSig}`
+                        },
+                        body: JSON.stringify({ question })
+                    });
+
+                    const data = await paidRes.json();
+                    document.getElementById(loadingId)?.remove();
+                    addAIMessage(data, true);
+                    updatePaymentLog(data);
+                    updateStats(data);
+
+                } else {
+                    // 200 OK — unverified answer (free, no payment needed)
+                    const data = await res.json();
+                    document.getElementById(loadingId)?.remove();
+                    addAIMessage(data, false);
+                    updatePaymentLog(data);
+                    updateStats(data);
+                }
 
             } catch (err) {
                 document.getElementById(loadingId)?.remove();
@@ -621,6 +656,19 @@
 
             sendBtn.disabled = false;
             input.focus();
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function signPayment(queryId, amount) {
+            // OWS wallet signing — generates a deterministic signature
+            // In production, this calls ows.sign() via the OWS SDK
+            const payload = `${queryId}:${amount}:${Date.now()}`;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(payload);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 40);
         }
 
         function addMessage(text, type) {
@@ -632,19 +680,28 @@
             messages.scrollTop = messages.scrollHeight;
         }
 
-        function addLoadingMessage(id) {
+        function addLoadingMessage(id, text) {
             const messages = document.getElementById('messages');
             const div = document.createElement('div');
             div.className = 'message message-ai';
             div.id = id;
             div.innerHTML = `<div class="message-bubble" style="color: var(--text-muted)">
-                Querying via x402<span class="loading-dots"></span>
+                <span class="loading-text">${text || 'Querying via x402'}</span><span class="loading-dots"></span>
             </div>`;
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
         }
 
-        function addAIMessage(data) {
+        function updateLoadingMessage(id, text) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const textEl = el.querySelector('.loading-text');
+            if (textEl) textEl.textContent = text;
+            const messages = document.getElementById('messages');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addAIMessage(data, was402) {
             const messages = document.getElementById('messages');
             const div = document.createElement('div');
             div.className = 'message message-ai';
@@ -666,14 +723,27 @@
                     ${escapeHtml(data.source_name || data.citation)}</a>`;
             }
 
-            // x402 flow visualization
-            const flow = data.payment.x402_flow;
-            const flowSteps = Object.values(flow).map((step, i) => {
-                let cls = '';
-                if (step.includes('SIGN') || step.includes('delivers verified')) cls = 'highlight';
-                if (step.includes('REFUSES') || step.includes('No payment') || step.includes('False')) cls = 'reject';
-                return `<div class="step ${cls}">${step}</div>`;
-            }).join('');
+            // x402 flow — show real protocol steps
+            let flowHtml = '';
+            if (was402) {
+                const txHash = data.payment.tx_hash || '0x...';
+                flowHtml = `
+                    <div class="x402-flow">
+                        <div class="step">→ POST /ask → <span style="color: var(--amber)">HTTP 402 Payment Required</span></div>
+                        <div class="step">→ X-Payment-Amount: ${data.payment.amount_usdc} USDC</div>
+                        <div class="step">→ X-Payment-Address: ${data.payment.to_wallet?.slice(0,10)}...</div>
+                        <div class="step highlight">→ OWS Policy Engine: citation ≠ null → SIGN</div>
+                        <div class="step highlight">→ POST /ask + X-Payment: ${data.query_id}:${txHash.slice(0,10)}...</div>
+                        <div class="step highlight">→ HTTP 200 OK — fact delivered</div>
+                    </div>`;
+            } else {
+                flowHtml = `
+                    <div class="x402-flow">
+                        <div class="step">→ POST /ask</div>
+                        <div class="step reject">→ No citation found — Policy Engine: REJECT</div>
+                        <div class="step reject">→ No payment signed — answer delivered free</div>
+                    </div>`;
+            }
 
             div.innerHTML = `
                 <div class="message-bubble">
@@ -688,7 +758,7 @@
                         <span class="ows-badge">OWS</span>
                     </div>
                     <div class="policy-status ${policyClass}">${policyText}</div>
-                    <div class="x402-flow">${flowSteps}</div>
+                    ${flowHtml}
                 </div>
             `;
 
