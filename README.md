@@ -49,6 +49,8 @@ cd backend && uvicorn server:app --host 0.0.0.0 --port 8402
 
 ## Demo
 
+[Watch the 25-second demo video](https://youtu.be/2n66un94ccg)
+
 Ask verified questions and see payments flow. Ask unverifiable questions and watch the wallet refuse.
 
 **Try these:**
