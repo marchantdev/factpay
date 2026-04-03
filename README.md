@@ -45,13 +45,20 @@ The wallet itself becomes the quality gate. Not application logic — cryptograp
 git clone https://github.com/marchantdev/factpay.git
 cd factpay
 
-# Install dependencies
-pip install fastapi uvicorn httpx python-dotenv
+# Install Python dependencies
+pip install fastapi uvicorn
+
+# Install OWS + MoonPay skills (optional — falls back to simulation mode)
+npm install
+npm run setup:ows      # Create consumer + provider wallets
+npm run setup:skills   # Install moonpay-x402 skill
+npm run setup:policy   # Set citation-conditional policy
 
 # Run
 cd backend && uvicorn server:app --host 0.0.0.0 --port 8402
 
 # Open http://localhost:8402
+# Check OWS status: http://localhost:8402/ows-status
 ```
 
 ## Demo

@@ -19,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from ows_wallet import consumer_wallet, provider_wallet, OWS_CLI_AVAILABLE
+
 app = FastAPI(title="FactPay", version="1.0.0")
 
 app.add_middleware(
@@ -104,9 +106,9 @@ FACT_DB = {
 FACT_PRICE_USDC = 0.003
 FACT_PRICE_DISPLAY = "$0.003"
 
-# OWS wallet addresses (real Base L2 addresses)
-PROVIDER_WALLET = os.getenv("FACTPAY_PROVIDER_WALLET", "0xC0140eEa19bD90a7cA75882d5218eFaF20426e42")
-CONSUMER_WALLET = os.getenv("FACTPAY_CONSUMER_WALLET", "0xF394cE6B21dB7145f3a5E36c2b1A7a580C54f1d8")
+# OWS wallet addresses — pulled from ows_wallet module
+PROVIDER_WALLET = provider_wallet.address
+CONSUMER_WALLET = consumer_wallet.address
 
 
 def find_fact(question: str) -> dict:
@@ -187,6 +189,9 @@ async def ask_question(request: Request):
     timestamp = time.time()
 
     if fact["verified"]:
+        # Run OWS Policy Engine check on the response
+        policy_result = consumer_wallet.check_policy({"citation": fact["citation"]})
+
         # Verified fact found — return HTTP 402 Payment Required
         # Store the challenge for later verification
         pending_challenges[query_id] = {
@@ -194,6 +199,7 @@ async def ask_question(request: Request):
             "question": question,
             "timestamp": timestamp,
             "amount": FACT_PRICE_USDC,
+            "policy_result": policy_result.result,
         }
 
         # Return 402 with payment details in headers (x402 standard)
@@ -371,6 +377,42 @@ async def get_stats():
         "price_per_fact": FACT_PRICE_DISPLAY,
         "consumer_wallet": CONSUMER_WALLET,
         "provider_wallet": PROVIDER_WALLET,
+    })
+
+
+@app.get("/ows-status")
+async def get_ows_status():
+    """Return OWS wallet and policy engine status."""
+    policy_result_verified = consumer_wallet.check_policy({"citation": "https://example.com"})
+    policy_result_unverified = consumer_wallet.check_policy({"citation": None})
+
+    return JSONResponse({
+        "ows_cli_available": OWS_CLI_AVAILABLE,
+        "mode": consumer_wallet.mode,
+        "consumer_wallet": {
+            "name": consumer_wallet.name,
+            "address": consumer_wallet.address,
+            "policy": "citation != null → SIGN",
+        },
+        "provider_wallet": {
+            "name": provider_wallet.name,
+            "address": provider_wallet.address,
+        },
+        "policy_engine_test": {
+            "verified_response": {
+                "input": {"citation": "https://example.com"},
+                "result": policy_result_verified.result,
+                "action": policy_result_verified.action,
+            },
+            "unverified_response": {
+                "input": {"citation": None},
+                "result": policy_result_unverified.result,
+                "action": policy_result_unverified.action,
+            },
+        },
+        "network": "base",
+        "asset": "USDC",
+        "price_per_verified_fact": FACT_PRICE_DISPLAY,
     })
 
 

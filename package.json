@@ -4,9 +4,14 @@
   "description": "Pay-Per-Fact AI Oracle — outcome-conditional micropayments via OWS Policy Engine",
   "scripts": {
     "dev": "cd backend && uvicorn server:app --reload --port 8402",
-    "start": "cd backend && uvicorn server:app --host 0.0.0.0 --port 8402"
+    "start": "cd backend && uvicorn server:app --host 0.0.0.0 --port 8402",
+    "setup:ows": "npx @moonpay/cli wallet create --name factpay-consumer && npx @moonpay/cli wallet create --name factpay-provider",
+    "setup:skills": "npx skills add moonpay/skills",
+    "setup:policy": "npx @moonpay/cli policy set --wallet factpay-consumer --condition 'response.citation != null' --max-per-tx 0.01"
   },
   "dependencies": {
-    "@open-wallet-standard/core": "latest"
-  }
+    "@open-wallet-standard/core": "latest",
+    "@moonpay/cli": "latest"
+  },
+  "keywords": ["x402", "ows", "moonpay", "micropayments", "policy-engine", "ai-oracle"]
 }
